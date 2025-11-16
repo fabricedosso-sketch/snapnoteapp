@@ -5,8 +5,13 @@ import 'package:projetfinal/screens/login_screen.dart';
 import 'package:projetfinal/services/auth_service.dart';
 import 'package:projetfinal/services/database_helper.dart';
 
-/// Page d'inscription de l'application
-/// Permet à un nouvel utilisateur de créer un compte
+// ==============================================================================
+// PAGE D'INSCRIPTION
+// ==============================================================================
+// Cette page permet à un nouvel utilisateur de créer un compte
+// Elle collecte : nom, prénom, email et mot de passe
+// C'est comme remplir un formulaire d'adhésion à un club !
+// ==============================================================================
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -14,27 +19,56 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
+// ==============================================================================
+// ÉTAT DE LA PAGE D'INSCRIPTION
+// ==============================================================================
+// Cette classe gère tout ce qui peut changer sur la page
+// (texte saisi, chargement, visibilité du mot de passe, etc.)
+// ==============================================================================
 class _RegisterScreenState extends State<RegisterScreen> {
-  // Contrôleurs pour récupérer le texte des champs
+  // ==========================================================================
+  // CONTRÔLEURS DE CHAMPS DE TEXTE
+  // ==========================================================================
+  // Les contrôleurs permettent de récupérer ce que l'utilisateur tape
+  // C'est comme avoir un carnet pour noter ce qu'on dit !
   final _nomController = TextEditingController();
   final _prenomController = TextEditingController();
   final _emailController = TextEditingController();
   final _motDePasseController = TextEditingController();
 
-  // Services nécessaires
+  // ==========================================================================
+  // SERVICES NÉCESSAIRES
+  // ==========================================================================
+  // DatabaseHelper = pour enregistrer le nouvel utilisateur dans la base
+  // AuthService = pour gérer la session de connexion
   final _databaseHelper = DatabaseHelper();
   final _authService = AuthService();
 
-  // Clé pour valider le formulaire
+  // ==========================================================================
+  // CLÉ DE VALIDATION DU FORMULAIRE
+  // ==========================================================================
+  // Cette clé permet de vérifier que tous les champs sont correctement remplis
+  // avant de créer le compte
   final _formKey = GlobalKey<FormState>();
 
-  // Variable pour afficher un indicateur de chargement
+  // ==========================================================================
+  // VARIABLES D'ÉTAT
+  // ==========================================================================
+  // _isLoading = true quand on est en train de créer le compte
+  // Permet d'afficher un spinner et de désactiver le bouton
   bool _isLoading = false;
 
-  // Variable pour masquer/afficher le mot de passe
+  // _obscurePassword = true pour masquer le mot de passe (afficher des points)
+  // L'utilisateur peut cliquer sur l'œil pour le voir/cacher
   bool _obscurePassword = true;
 
-  /// Libérer les ressources quand la page est détruite
+  // ==========================================================================
+  // NETTOYAGE DES RESSOURCES
+  // ==========================================================================
+  // Cette fonction est appelée quand la page est détruite
+  // Elle libère la mémoire utilisée par les contrôleurs
+  // C'est comme ranger ses affaires avant de quitter une pièce !
+  // ==========================================================================
   @override
   void dispose() {
     _nomController.dispose();
@@ -44,17 +78,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  /// Fonction de création de compte
-  /// Crée un nouvel utilisateur et le connecte automatiquement
+  // ==========================================================================
+  // FONCTION DE CRÉATION DE COMPTE
+  // ==========================================================================
+  // Cette fonction est appelée quand on clique sur "Créer un compte"
+  // Elle valide les données, crée l'utilisateur, et le connecte automatiquement
+  // ==========================================================================
   Future<void> _creerCompte() async {
-    // Valider le formulaire
+    // ========================================================================
+    // VALIDATION DU FORMULAIRE
+    // ========================================================================
+    // validate() vérifie tous les champs avec leurs validator()
+    // Si un champ est invalide, ça retourne false et affiche l'erreur
     if (!_formKey.currentState!.validate()) return;
 
-    // Afficher l'indicateur de chargement
+    // ========================================================================
+    // AFFICHER L'INDICATEUR DE CHARGEMENT
+    // ========================================================================
+    // setState() = dire à Flutter de redessiner l'interface
+    // On met _isLoading à true pour montrer le spinner
     setState(() => _isLoading = true);
 
     try {
-      // Créer un objet User avec les informations saisies
+      // ======================================================================
+      // CRÉER L'OBJET USER
+      // ======================================================================
+      // On crée un objet User avec les informations saisies
+      // trim() enlève les espaces au début et à la fin du texte
       final user = User(
         nom: _nomController.text.trim(),
         prenom: _prenomController.text.trim(),
@@ -62,43 +112,65 @@ class _RegisterScreenState extends State<RegisterScreen> {
         motDePasse: _motDePasseController.text,
       );
 
-      // Appeler la fonction d'inscription de la base de données
+      // ======================================================================
+      // ENREGISTRER L'UTILISATEUR DANS LA BASE DE DONNÉES
+      // ======================================================================
+      // registerUser() crée le compte et retourne un Map avec le résultat
       final result = await _databaseHelper.registerUser(user);
 
-      // Vérifier que le widget existe toujours
+      // ======================================================================
+      // VÉRIFIER QUE LE WIDGET EXISTE TOUJOURS
+      // ======================================================================
+      // mounted = vérifie que la page n'a pas été fermée pendant l'attente
       if (!mounted) return;
 
-      // Si l'inscription est réussie
+      // ======================================================================
+      // TRAITER LE RÉSULTAT
+      // ======================================================================
       if (result['success']) {
+        // ====================================================================
+        // INSCRIPTION RÉUSSIE
+        // ====================================================================
+        
         // Sauvegarder la session de l'utilisateur
+        // Cela permet de le garder connecté
         await _authService.saveUserSession(result['user']);
 
-        // Afficher un message de succès
+        // Afficher un message de succès en bas de l'écran
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result['message']),
-            backgroundColor: Colors.green,
+            backgroundColor: Colors.green, // Vert = succès
             behavior: SnackBarBehavior.floating,
           ),
         );
 
         // Naviguer vers la page d'accueil
+        // pushReplacement = remplacer la page actuelle (pas de retour possible)
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
         );
       } else {
-        // Afficher un message d'erreur
+        // ====================================================================
+        // INSCRIPTION ÉCHOUÉE
+        // ====================================================================
+        // Par exemple : email déjà utilisé
+        
+        // Afficher le message d'erreur
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result['message']),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: Colors.redAccent, // Rouge = erreur
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } catch (e) {
-      // En cas d'erreur inattendue
+      // ======================================================================
+      // GESTION DES ERREURS INATTENDUES
+      // ======================================================================
+      // Si quelque chose se passe mal, on affiche l'erreur
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur: $e'),
@@ -107,60 +179,89 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       );
     } finally {
-      // Cacher l'indicateur de chargement
+      // ======================================================================
+      // CACHER L'INDICATEUR DE CHARGEMENT
+      // ======================================================================
+      // finally = toujours exécuté, que ça marche ou pas
+      // On vérifie mounted avant de faire setState()
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
   }
 
+  // ==========================================================================
+  // CONSTRUCTION DE L'INTERFACE VISUELLE
+  // ==========================================================================
+  // Cette fonction crée tout ce qu'on voit à l'écran
+  // ==========================================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      
       body: SafeArea(
+        // SafeArea évite que le contenu soit caché par l'encoche
         child: Center(
+          // Center = centrer tout le contenu
           child: SingleChildScrollView(
+            // Permet de défiler si le clavier apparaît ou sur petit écran
             padding: EdgeInsets.all(30),
+            
+            // ================================================================
+            // FORMULAIRE
+            // ================================================================
+            // Form permet de grouper les champs et de les valider ensemble
             child: Form(
-              key: _formKey,
+              key: _formKey, // La clé pour accéder au formulaire
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo de l'application
+                  // ==============================================================
+                  // LOGO DE L'APPLICATION
+                  // ==============================================================
                   SizedBox(
                     height: 200,
                     child: Image.asset("assets/images/logo.png"),
                   ),
 
-                  // Titre "Inscription"
+                  // ==============================================================
+                  // TITRE "INSCRIPTION"
+                  // ==============================================================
                   Text(
                     "Inscription",
                     style: TextStyle(
                       fontSize: 60,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w900, // Très gras
                       color: Colors.black87,
                     ),
                   ),
                   SizedBox(height: 40),
 
-                  // Champ Nom
+                  // ==============================================================
+                  // CHAMP NOM
+                  // ==============================================================
                   TextFormField(
-                    controller: _nomController,
+                    controller: _nomController, // Contrôleur pour récupérer le texte
                     decoration: InputDecoration(
-                      hintText: "Écrivez votre nom",
-                      prefixIcon: Icon(Icons.person_outlined),
+                      hintText: "Écrivez votre nom", // Texte indicatif
+                      prefixIcon: Icon(Icons.person_outlined), // Icône à gauche
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
+                      // Style quand le champ est sélectionné
                       focusedBorder: OutlineInputBorder(
                         borderSide: const BorderSide(
-                          color: Color.fromRGBO(0, 211, 137, 100),
+                          color: Color.fromRGBO(0, 211, 137, 100), // Vert
                           width: 2.0,
                         ),
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
+                    // ============================================================
+                    // VALIDATION DU NOM
+                    // ============================================================
+                    // Cette fonction vérifie que le nom est valide
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer votre nom';
@@ -168,12 +269,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       if (value.length < 2) {
                         return 'Le nom doit contenir au moins 2 caractères';
                       }
-                      return null;
+                      return null; // null = pas d'erreur
                     },
                   ),
                   SizedBox(height: 20),
 
-                  // Champ Prénom
+                  // ==============================================================
+                  // CHAMP PRÉNOM
+                  // ==============================================================
                   TextFormField(
                     controller: _prenomController,
                     decoration: InputDecoration(
@@ -190,6 +293,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
+                    // ============================================================
+                    // VALIDATION DU PRÉNOM
+                    // ============================================================
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer votre prénom';
@@ -202,10 +308,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   SizedBox(height: 20),
 
-                  // Champ Email
+                  // ==============================================================
+                  // CHAMP EMAIL
+                  // ==============================================================
                   TextFormField(
                     controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
+                    keyboardType: TextInputType.emailAddress, // Clavier avec @
                     decoration: InputDecoration(
                       hintText: "Écrivez votre adresse email",
                       prefixIcon: Icon(Icons.email_outlined),
@@ -220,6 +328,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
+                    // ============================================================
+                    // VALIDATION DE L'EMAIL
+                    // ============================================================
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer votre email';
@@ -232,20 +343,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   SizedBox(height: 20),
 
-                  // Champ Mot de passe
+                  // ==============================================================
+                  // CHAMP MOT DE PASSE
+                  // ==============================================================
                   TextFormField(
                     controller: _motDePasseController,
-                    obscureText: _obscurePassword,
+                    obscureText: _obscurePassword, // Masquer le texte (points)
                     decoration: InputDecoration(
                       hintText: "Écrivez votre mot de passe",
                       prefixIcon: Icon(Icons.lock_outlined),
+                      // ========================================================
+                      // BOUTON POUR VOIR/CACHER LE MOT DE PASSE
+                      // ========================================================
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
+                              ? Icons.visibility_outlined // Œil ouvert
+                              : Icons.visibility_off_outlined, // Œil barré
                         ),
                         onPressed: () {
+                          // Inverser l'état de visibilité
                           setState(() {
                             _obscurePassword = !_obscurePassword;
                           });
@@ -262,6 +379,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
+                    // ============================================================
+                    // VALIDATION DU MOT DE PASSE
+                    // ============================================================
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer un mot de passe';
@@ -274,20 +394,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   SizedBox(height: 50),
 
-                  // Bouton "Créer un compte"
+                  // ==============================================================
+                  // BOUTON "CRÉER UN COMPTE"
+                  // ==============================================================
                   SizedBox(
                     width: 350,
                     child: ElevatedButton(
+                      // Si _isLoading est true, le bouton est désactivé (null)
                       onPressed: _isLoading ? null : _creerCompte,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 17),
                         backgroundColor: const Color.fromRGBO(0, 211, 137, 100),
-                        foregroundColor: Colors.black,
+                        foregroundColor: Colors.black, // Couleur du texte
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                         side: BorderSide(width: 2, color: Colors.black),
                       ),
+                      // ========================================================
+                      // CONTENU DU BOUTON
+                      // ========================================================
+                      // Si _isLoading : afficher un spinner
+                      // Sinon : afficher le texte "Créer un compte"
                       child: _isLoading
                           ? SizedBox(
                               height: 20,
@@ -310,11 +438,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   SizedBox(height: 10),
 
-                  // Bouton "Se connecter" (retour à la page de connexion)
+                  // ==============================================================
+                  // BOUTON "SE CONNECTER"
+                  // ==============================================================
+                  // Pour les utilisateurs qui ont déjà un compte
                   SizedBox(
                     width: 350,
                     child: ElevatedButton(
                       onPressed: () {
+                        // Naviguer vers la page de connexion
                         Navigator.push(
                           context,
                           MaterialPageRoute(

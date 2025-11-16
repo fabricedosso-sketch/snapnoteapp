@@ -34,10 +34,105 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  # ============================================================================
+  # Package qui fournit les icônes iOS (style Apple)
+  # Version : 1.0.8
+  # 
+  # Utilité : Ajoute une police d'icônes pour créer des interfaces au style iOS
+  # Exemple d'icônes : flèches, cœurs, étoiles, etc. avec le design iOS
+  # 
+  # Utilisation dans le code :
+  # Icon(CupertinoIcons.heart)
+  # Icon(CupertinoIcons.home)
+  # 
+  # Note : Même si vous créez une app Android, ce package est inclus par défaut
+  # car Flutter peut créer des apps multi-plateformes (iOS + Android)
+  # ============================================================================
+
+  # ============================================================================
   sqflite: ^2.4.2
+  # ============================================================================
+  # Package pour gérer une base de données SQLite locale sur le téléphone
+  # Version : 2.4.2
+  # 
+  # Utilité : Permet de stocker des données de manière permanente sur l'appareil
+  # C'est comme avoir une mini base de données directement dans l'application
+  # 
+  # Dans votre projet, sqflite est utilisé pour :
+  # - Stocker les utilisateurs (id, nom, prénom, email, mot de passe)
+  # - Stocker les notes (id, titre, contenu, couleur, date)
+  # 
+  # Fonctionnalités principales :
+  # - Créer des tables (CREATE TABLE)
+  # - Insérer des données (INSERT)
+  # - Lire des données (SELECT)
+  # - Mettre à jour des données (UPDATE)
+  # - Supprimer des données (DELETE)
+  # 
+  # Utilisation dans votre code :
+  # Fichier database_helper.dart utilise ce package pour toutes les opérations
+  # avec la base de données (création, lecture, modification, suppression)
+  # ============================================================================
+
+  # ============================================================================
   path: ^1.9.1
+  # ============================================================================
+  # Package pour manipuler les chemins de fichiers et dossiers
+  # 
+  # Utilité : Permet de construire des chemins de fichiers de manière sûre
+  # et compatible avec tous les systèmes d'exploitation (Android, iOS, etc.)
+  # 
+  # Dans mon projet, path est utilisé pour :
+  # - Trouver l'emplacement où stocker la base de données SQLite
+  # - Combiner des chemins de dossiers et noms de fichiers
+  # 
+  # Exemple dans votre code (database_helper.dart) :
+  # String path = join(await getDatabasesPath(), 'snapnote.db');
+  # 
+  # Explication : join() combine le chemin du dossier des bases de données
+  # avec le nom du fichier 'snapnote.db' de manière sécurisée
+  # Résultat typique : /data/user/0/com.example.app/databases/snapnote.db
+  # ============================================================================
+
+  # ============================================================================
   crypto: ^3.0.7
+  # ============================================================================
+  # Package qui fournit des algorithmes de cryptographie
+  # 
+  # Utilité : Permet de crypter et hasher (transformer de manière irréversible)
+  # des données sensibles comme les mots de passe
+  # 
+  # Dans votre projet, crypto est utilisé pour :
+  # - Hasher les mots de passe avant de les stocker dans la base de données
+  # - Utilise l'algorithme SHA256 (Secure Hash Algorithm 256 bits)
+  # 
+  # Pourquoi c'est important ?
+  # - On ne stocke JAMAIS un mot de passe en clair (texte normal)
+  # - Si quelqu'un accède à la base, il ne peut pas lire les vrais mots de passe
+  # - Le hashing est irréversible : impossible de retrouver le mot de passe original
+  # 
+  # Exemple concret :
+  # Mot de passe : "monmotdepasse123"
+  # Après hashing : "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
+  # ============================================================================
+
+  # ============================================================================
   shared_preferences: ^2.5.3
+  # ============================================================================
+  # Package pour stocker des données simples de manière persistante
+  # 
+  # Utilité : Permet de sauvegarder de petites données (clé-valeur) qui restent
+  # même après avoir fermé l'application. C'est comme un carnet de notes permanent pour l'application
+  # 
+  # Dans mon projet, shared_preferences est utilisé pour :
+  # - Sauvegarder la session de l'utilisateur connecté
+  # - Stocker : userId, nom, prénom, email, statut de connexion
+  # - Permettre à l'utilisateur de rester connecté après avoir fermé l'app
+  #
+  # Différence avec SQLite :
+  # - SharedPreferences : pour des données simples et légères (préférences, session)
+  # - SQLite : pour des données structurées et complexes (utilisateurs, notes)
+  # ============================================================================
 
 dev_dependencies:
   flutter_test:

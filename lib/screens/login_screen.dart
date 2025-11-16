@@ -4,8 +4,13 @@ import 'package:projetfinal/screens/register_screen.dart';
 import 'package:projetfinal/services/auth_service.dart';
 import 'package:projetfinal/services/database_helper.dart';
 
-/// Page de connexion de l'application
-/// Permet à un utilisateur existant de se connecter
+// ==============================================================================
+// PAGE DE CONNEXION
+// ==============================================================================
+// Cette page permet à un utilisateur existant de se connecter à l'application
+// Elle demande l'email et le mot de passe, puis vérifie dans la base de données
+// C'est comme la porte d'entrée avec un code d'accès !
+// ==============================================================================
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -13,25 +18,54 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+// ==============================================================================
+// ÉTAT DE LA PAGE DE CONNEXION
+// ==============================================================================
+// Cette classe gère tout ce qui peut changer sur la page
+// (texte saisi, chargement, visibilité du mot de passe, etc.)
+// ==============================================================================
 class _LoginScreenState extends State<LoginScreen> {
-  // Contrôleurs pour récupérer le texte des champs
+  // ==========================================================================
+  // CONTRÔLEURS DE CHAMPS DE TEXTE
+  // ==========================================================================
+  // Les contrôleurs permettent de récupérer ce que l'utilisateur tape
+  // C'est comme avoir un carnet pour noter ce qu'on dit !
   final _emailController = TextEditingController();
   final _motDePasseController = TextEditingController();
 
-  // Services nécessaires
+  // ==========================================================================
+  // SERVICES NÉCESSAIRES
+  // ==========================================================================
+  // DatabaseHelper = pour vérifier les identifiants dans la base de données
+  // AuthService = pour gérer la session de connexion
   final _databaseHelper = DatabaseHelper();
   final _authService = AuthService();
 
-  // Clé pour valider le formulaire
+  // ==========================================================================
+  // CLÉ DE VALIDATION DU FORMULAIRE
+  // ==========================================================================
+  // Cette clé permet de vérifier que tous les champs sont correctement remplis
+  // avant de tenter la connexion
   final _formKey = GlobalKey<FormState>();
 
-  // Variable pour afficher un indicateur de chargement
+  // ==========================================================================
+  // VARIABLES D'ÉTAT
+  // ==========================================================================
+  // _isLoading = true quand on est en train de vérifier les identifiants
+  // Permet d'afficher un spinner et de désactiver le bouton
   bool _isLoading = false;
 
-  // Variable pour masquer/afficher le mot de passe
+  // _obscurePassword = true pour masquer le mot de passe (afficher des points)
+  // L'utilisateur peut cliquer sur l'œil pour le voir/cacher
   bool _obscurePassword = true;
 
-  /// Libérer les ressources quand la page est détruite
+  // ==========================================================================
+  // NETTOYAGE DES RESSOURCES
+  // ==========================================================================
+  // Cette fonction est appelée quand la page est détruite
+  // Elle libère la mémoire utilisée par les contrôleurs
+  // C'est comme ranger ses affaires avant de quitter une pièce !
+  // ==========================================================================
   @override
   void dispose() {
     _emailController.dispose();
@@ -39,47 +73,84 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  /// Fonction de connexion
-  /// Vérifie les identifiants et connecte l'utilisateur si correct
+  // ==========================================================================
+  // FONCTION DE CONNEXION
+  // ==========================================================================
+  // Cette fonction est appelée quand on clique sur "Se connecter"
+  // Elle vérifie les identifiants et connecte l'utilisateur si tout est correct
+  // ==========================================================================
   Future<void> _creerConnexion() async {
-    // Valider le formulaire (vérifier que les champs sont corrects)
+    // ========================================================================
+    // VALIDATION DU FORMULAIRE
+    // ========================================================================
+    // validate() vérifie tous les champs avec leurs validator()
+    // Si un champ est invalide, ça retourne false et affiche l'erreur
     if (!_formKey.currentState!.validate()) return;
 
-    // Afficher l'indicateur de chargement
+    // ========================================================================
+    // AFFICHER L'INDICATEUR DE CHARGEMENT
+    // ========================================================================
+    // setState() = dire à Flutter de redessiner l'interface
+    // On met _isLoading à true pour montrer le spinner
     setState(() => _isLoading = true);
 
     try {
-      // Appeler la fonction de connexion de la base de données
+      // ======================================================================
+      // VÉRIFIER LES IDENTIFIANTS DANS LA BASE DE DONNÉES
+      // ======================================================================
+      // loginUser() cherche dans la base un utilisateur avec cet email
+      // et ce mot de passe, puis retourne un Map avec le résultat
       final result = await _databaseHelper.loginUser(
-        email: _emailController.text.trim(),
+        email: _emailController.text.trim(), // trim() enlève les espaces
         password: _motDePasseController.text,
       );
 
-      // Vérifier que le widget existe toujours
+      // ======================================================================
+      // VÉRIFIER QUE LE WIDGET EXISTE TOUJOURS
+      // ======================================================================
+      // mounted = vérifie que la page n'a pas été fermée pendant l'attente
       if (!mounted) return;
 
-      // Si la connexion est réussie
+      // ======================================================================
+      // TRAITER LE RÉSULTAT
+      // ======================================================================
       if (result['success']) {
+        // ====================================================================
+        // CONNEXION RÉUSSIE
+        // ====================================================================
+        // Les identifiants sont corrects !
+        
         // Sauvegarder la session de l'utilisateur
+        // Cela permet de le garder connecté
         await _authService.saveUserSession(result['user']);
 
-        // Naviguer vers la page d'accueil (remplacer l'écran actuel)
+        // Naviguer vers la page d'accueil
+        // pushReplacement = remplacer la page actuelle (pas de retour possible)
+        // On ne veut pas que l'utilisateur puisse revenir à la page de connexion
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
         );
       } else {
-        // Afficher un message d'erreur
+        // ====================================================================
+        // CONNEXION ÉCHOUÉE
+        // ====================================================================
+        // Email ou mot de passe incorrect
+        
+        // Afficher le message d'erreur en bas de l'écran
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result['message']),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: Colors.redAccent, // Rouge = erreur
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } catch (e) {
-      // En cas d'erreur inattendue
+      // ======================================================================
+      // GESTION DES ERREURS INATTENDUES
+      // ======================================================================
+      // Si quelque chose se passe mal, on affiche l'erreur
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur: $e'),
@@ -88,62 +159,91 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } finally {
-      // Cacher l'indicateur de chargement
+      // ======================================================================
+      // CACHER L'INDICATEUR DE CHARGEMENT
+      // ======================================================================
+      // finally = toujours exécuté, que ça marche ou pas
+      // On vérifie mounted avant de faire setState()
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
   }
 
+  // ==========================================================================
+  // CONSTRUCTION DE L'INTERFACE VISUELLE
+  // ==========================================================================
+  // Cette fonction crée tout ce qu'on voit à l'écran
+  // ==========================================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       // Fond blanc
       backgroundColor: Colors.white,
+      
       body: SafeArea(
+        // SafeArea évite que le contenu soit caché par l'encoche
         child: Center(
+          // Center = centrer tout le contenu
           child: SingleChildScrollView(
+            // Permet de défiler si le clavier apparaît ou sur petit écran
             padding: EdgeInsets.all(30),
+            
+            // ================================================================
+            // FORMULAIRE
+            // ================================================================
+            // Form permet de grouper les champs et de les valider ensemble
             child: Form(
-              key: _formKey,
+              key: _formKey, // La clé pour accéder au formulaire
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo de l'application
+                  // ==============================================================
+                  // LOGO DE L'APPLICATION
+                  // ==============================================================
                   SizedBox(
-                     height: 200,
-                     child: Image.asset("assets/images/logo.png"),
-                    ),
-                  // Titre "Connexion"
+                    height: 200,
+                    child: Image.asset("assets/images/logo.png"),
+                  ),
+                  
+                  // ==============================================================
+                  // TITRE "CONNEXION"
+                  // ==============================================================
                   Text(
                     "Connexion",
                     style: TextStyle(
                       fontSize: 60,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w900, // Très gras
                       color: Colors.black87,
                     ),
                   ),
                   SizedBox(height: 40),
 
-                  // Champ Email
+                  // ==============================================================
+                  // CHAMP EMAIL
+                  // ==============================================================
                   TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
+                    controller: _emailController, // Contrôleur pour récupérer le texte
+                    keyboardType: TextInputType.emailAddress, // Clavier avec @
                     decoration: InputDecoration(
-                      hintText: "Écrivez votre adresse email",
-                      prefixIcon: Icon(Icons.email_outlined),
+                      hintText: "Écrivez votre adresse email", // Texte indicatif
+                      prefixIcon: Icon(Icons.email_outlined), // Icône à gauche
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
+                      // Style quand le champ est sélectionné
                       focusedBorder: OutlineInputBorder(
                         borderSide: const BorderSide(
-                          color: Color.fromRGBO(0, 211, 137, 100),
+                          color: Color.fromRGBO(0, 211, 137, 100), // Vert
                           width: 2.0,
                         ),
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    // Validation du champ email
+                    // ============================================================
+                    // VALIDATION DE L'EMAIL
+                    // ============================================================
+                    // Cette fonction vérifie que l'email est correct
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer votre email';
@@ -151,26 +251,31 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (!value.contains('@')) {
                         return 'Email invalide';
                       }
-                      return null;
+                      return null; // null = pas d'erreur
                     },
                   ),
                   SizedBox(height: 20),
 
-                  // Champ Mot de passe
+                  // ==============================================================
+                  // CHAMP MOT DE PASSE
+                  // ==============================================================
                   TextFormField(
                     controller: _motDePasseController,
-                    obscureText: _obscurePassword, // Masquer le texte
+                    obscureText: _obscurePassword, // Masquer le texte (points)
                     decoration: InputDecoration(
                       hintText: "Écrivez votre mot de passe",
                       prefixIcon: Icon(Icons.lock_outlined),
-                      // Bouton pour afficher/masquer le mot de passe
+                      // ========================================================
+                      // BOUTON POUR VOIR/CACHER LE MOT DE PASSE
+                      // ========================================================
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
+                              ? Icons.visibility_outlined // Œil ouvert
+                              : Icons.visibility_off_outlined, // Œil barré
                         ),
                         onPressed: () {
+                          // Inverser l'état de visibilité
                           setState(() {
                             _obscurePassword = !_obscurePassword;
                           });
@@ -187,7 +292,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    // Validation du mot de passe
+                    // ============================================================
+                    // VALIDATION DU MOT DE PASSE
+                    // ============================================================
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer votre mot de passe';
@@ -200,20 +307,28 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   SizedBox(height: 30),
 
-                  // Bouton "Se connecter"
+                  // ==============================================================
+                  // BOUTON "SE CONNECTER"
+                  // ==============================================================
                   SizedBox(
                     width: 350,
                     child: ElevatedButton(
+                      // Si _isLoading est true, le bouton est désactivé (null)
                       onPressed: _isLoading ? null : _creerConnexion,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 17),
                         backgroundColor: const Color.fromRGBO(0, 211, 137, 100),
-                        foregroundColor: Colors.black,
+                        foregroundColor: Colors.black, // Couleur du texte
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                         side: BorderSide(width: 2, color: Colors.black),
                       ),
+                      // ========================================================
+                      // CONTENU DU BOUTON
+                      // ========================================================
+                      // Si _isLoading : afficher un spinner
+                      // Sinon : afficher le texte "Se connecter"
                       child: _isLoading
                           ? SizedBox(
                               height: 20,
@@ -236,7 +351,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   SizedBox(height: 10),
 
-                  // Bouton "Créer un compte"
+                  // ==============================================================
+                  // BOUTON "CRÉER UN COMPTE"
+                  // ==============================================================
+                  // Pour les utilisateurs qui n'ont pas encore de compte
                   SizedBox(
                     width: 350,
                     child: ElevatedButton(

@@ -4,9 +4,20 @@ import 'package:projetfinal/services/auth_service.dart';
 import 'package:projetfinal/services/database_helper.dart';
 import 'package:projetfinal/widgets/bottom_navigation.dart';
 
-/// Page pour ajouter ou modifier une note
-/// Si note est null = mode ajout, sinon = mode modification
+// ==============================================================================
+// PAGE POUR AJOUTER OU MODIFIER UNE NOTE
+// ==============================================================================
+// Cette page a deux modes :
+// - Mode AJOUT : si note est null, on crée une nouvelle note
+// - Mode MODIFICATION : si note existe, on modifie une note existante
+// C'est comme un formulaire qui peut servir à créer OU à éditer !
+// ==============================================================================
 class AddEditNoteScreen extends StatefulWidget {
+  // ==========================================================================
+  // LA NOTE À MODIFIER (OU NULL SI NOUVELLE NOTE)
+  // ==========================================================================
+  // Si note est null = on va créer une nouvelle note
+  // Si note existe = on va modifier cette note
   final Note? note;
 
   const AddEditNoteScreen({this.note});
@@ -15,46 +26,86 @@ class AddEditNoteScreen extends StatefulWidget {
   State<AddEditNoteScreen> createState() => _AddEditNoteScreenState();
 }
 
+// ==============================================================================
+// ÉTAT DE LA PAGE D'AJOUT/MODIFICATION
+// ==============================================================================
+// Cette classe gère les données et les actions de la page
+// ==============================================================================
 class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
-  // Clé pour valider le formulaire
+  // ==========================================================================
+  // CLÉ DE VALIDATION DU FORMULAIRE
+  // ==========================================================================
+  // Cette clé permet de vérifier que tous les champs sont correctement remplis
+  // avant de sauvegarder la note
   final _formKey = GlobalKey<FormState>();
 
-  // Contrôleurs pour les champs de texte
+  // ==========================================================================
+  // CONTRÔLEURS POUR LES CHAMPS DE TEXTE
+  // ==========================================================================
+  // Les contrôleurs permettent de récupérer et modifier le contenu des champs
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
 
-  // Services nécessaires
+  // ==========================================================================
+  // SERVICES NÉCESSAIRES
+  // ==========================================================================
+  // DatabaseHelper = pour sauvegarder/modifier la note dans la base
+  // AuthService = pour savoir quel utilisateur crée/modifie la note
   final DatabaseHelper _databaseHelper = DatabaseHelper();
   final AuthService _authService = AuthService();
 
-  // Couleur sélectionnée pour la note
+  // ==========================================================================
+  // COULEUR SÉLECTIONNÉE POUR LA NOTE
+  // ==========================================================================
+  // La couleur par défaut est ambre (jaune-orangé)
   Color _selectedColor = Colors.amber;
 
-  // Liste des couleurs disponibles
+  // ==========================================================================
+  // LISTE DES COULEURS DISPONIBLES
+  // ==========================================================================
+  // Ce sont les couleurs que l'utilisateur peut choisir pour sa note
+  // On utilise des couleurs personnalisées avec fromRGBO
   final List<Color> _colors = [
-    Color.fromRGBO(248, 156, 8, 100),
-    Color.fromRGBO(46, 111, 64, 100),
-    Color.fromRGBO(187, 11, 11, 100),
-    Color.fromRGBO(137, 81, 41, 100),
-    Color.fromRGBO(2, 95, 181, 100),
-    Color.fromRGBO(199, 21, 133, 100),
-    Color.fromRGBO(255, 207, 57, 100),
+    Color.fromRGBO(248, 156, 8, 100),   // Orange
+    Color.fromRGBO(46, 111, 64, 100),   // Vert
+    Color.fromRGBO(187, 11, 11, 100),   // Rouge
+    Color.fromRGBO(137, 81, 41, 100),   // Marron
+    Color.fromRGBO(2, 95, 181, 100),    // Bleu
+    Color.fromRGBO(199, 21, 133, 100),  // Rose/Violet
+    Color.fromRGBO(255, 207, 57, 100),  // Jaune
   ];
 
-  /// Initialiser les champs si on est en mode modification
+  // ==========================================================================
+  // INITIALISATION DE LA PAGE
+  // ==========================================================================
+  // Cette fonction est appelée automatiquement quand la page est créée
+  // Si on est en mode modification, on pré-remplit les champs
+  // ==========================================================================
   @override
   void initState() {
     super.initState();
-    // Si on modifie une note existante
+    
+    // ========================================================================
+    // MODE MODIFICATION : PRÉ-REMPLIR LES CHAMPS
+    // ========================================================================
+    // Si widget.note n'est pas null, on est en mode modification
     if (widget.note != null) {
-      // Remplir les champs avec les valeurs existantes
+      // Remplir le champ titre avec le titre existant
       _titleController.text = widget.note!.title;
+      // Remplir le champ contenu avec le contenu existant
       _contentController.text = widget.note!.content;
+      // Sélectionner la couleur existante
       _selectedColor = Color(int.parse(widget.note!.color));
     }
+    // Si widget.note est null, les champs restent vides (mode ajout)
   }
 
-  /// Libérer les ressources
+  // ==========================================================================
+  // NETTOYAGE DES RESSOURCES
+  // ==========================================================================
+  // Cette fonction est appelée quand la page est détruite
+  // Elle libère la mémoire utilisée par les contrôleurs
+  // ==========================================================================
   @override
   void dispose() {
     _titleController.dispose();
@@ -62,13 +113,24 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
     super.dispose();
   }
 
-  /// Sauvegarder la note (création ou modification)
+  // ==========================================================================
+  // SAUVEGARDER LA NOTE (CRÉATION OU MODIFICATION)
+  // ==========================================================================
+  // Cette fonction est appelée quand on clique sur "Enregistrer"
+  // Elle crée une nouvelle note ou met à jour une note existante
+  // ==========================================================================
   Future<void> _saveNote() async {
-    // Valider le formulaire
+    // ========================================================================
+    // VALIDATION DU FORMULAIRE
+    // ========================================================================
+    // validate() vérifie tous les champs avec leurs validator()
+    // Si un champ est invalide, ça retourne false et affiche l'erreur
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      // Récupérer l'ID de l'utilisateur connecté
+      // ======================================================================
+      // RÉCUPÉRER L'ID DE L'UTILISATEUR CONNECTÉ
+      // ======================================================================
       final userId = _authService.getCurrentUserId();
 
       // Vérifier qu'un utilisateur est bien connecté
@@ -76,23 +138,31 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
         throw Exception('Utilisateur non connecté');
       }
 
-      // Créer l'objet Note avec les informations
+      // ======================================================================
+      // CRÉER L'OBJET NOTE
+      // ======================================================================
       final note = Note(
-        id: widget
-            .note
-            ?.id, // null si nouvelle note, ID existant si modification
-        userId: userId,
-        title: _titleController.text.trim(),
+        // Si widget.note est null (ajout) : id sera null (auto-généré par la base)
+        // Si widget.note existe (modification) : on garde le même ID
+        id: widget.note?.id,
+        userId: userId, // L'utilisateur propriétaire de la note
+        title: _titleController.text.trim(), // trim() enlève les espaces
         content: _contentController.text.trim(),
-        color: _selectedColor.value.toString(),
-        dateTime: DateTime.now().toString(),
+        color: _selectedColor.value.toString(), // Convertir la couleur en texte
+        dateTime: DateTime.now().toString(), // Date et heure actuelles
       );
 
-      // Mode ajout ou modification
+      // ======================================================================
+      // DÉCIDER : AJOUT OU MODIFICATION ?
+      // ======================================================================
       if (widget.note == null) {
-        // Ajouter une nouvelle note
+        // ====================================================================
+        // MODE AJOUT : CRÉER UNE NOUVELLE NOTE
+        // ====================================================================
         await _databaseHelper.insertNote(note, userId);
+        
         if (mounted) {
+          // Afficher un message de succès
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Note créée avec succès'),
@@ -102,9 +172,13 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
           );
         }
       } else {
-        // Mettre à jour une note existante
+        // ====================================================================
+        // MODE MODIFICATION : METTRE À JOUR UNE NOTE EXISTANTE
+        // ====================================================================
         await _databaseHelper.updateNote(note);
+        
         if (mounted) {
+          // Afficher un message de succès
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Note mise à jour'),
@@ -115,12 +189,16 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
         }
       }
 
-      // Retourner à la page précédente
+      // ======================================================================
+      // RETOURNER À LA PAGE PRÉCÉDENTE
+      // ======================================================================
       if (mounted) {
         Navigator.pop(context);
       }
     } catch (e) {
-      // Afficher un message d'erreur
+      // ======================================================================
+      // AFFICHER UN MESSAGE D'ERREUR
+      // ======================================================================
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur: $e'),
@@ -131,30 +209,48 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
     }
   }
 
+  // ==========================================================================
+  // CONSTRUCTION DE L'INTERFACE VISUELLE
+  // ==========================================================================
+  // Cette fonction crée tout ce qu'on voit à l'écran
+  // ==========================================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      
+      // ======================================================================
+      // APPBAR (BARRE DU HAUT)
+      // ======================================================================
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
+        // Bouton retour
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
+        // Titre qui change selon le mode (ajout ou modification)
         title: Text(
           widget.note == null ? 'Ajouter une note' : 'Modifier une note',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
       ),
+      
+      // ======================================================================
+      // CORPS DE LA PAGE : FORMULAIRE
+      // ======================================================================
       body: Form(
-        key: _formKey,
+        key: _formKey, // La clé pour accéder au formulaire
         child: Column(
           children: [
             Padding(
               padding: EdgeInsets.all(16),
               child: Column(
                 children: [
+                  // ==============================================================
+                  // CHAMP TITRE
+                  // ==============================================================
                   Column(
                     // Aligner le titre et le champ de texte au début (à gauche)
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,7 +263,6 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      // Champ Titre
                       TextFormField(
                         controller: _titleController,
                         decoration: InputDecoration(
@@ -175,25 +270,33 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
+                          // Style quand le champ est sélectionné
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
-                              color: Color(0xFF50C878),
+                              color: Color(0xFF50C878), // Vert
                               width: 2,
                             ),
                           ),
                         ),
-                        // Validation: le titre ne doit pas être vide
+                        // ========================================================
+                        // VALIDATION DU TITRE
+                        // ========================================================
+                        // Le titre ne doit pas être vide
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return "Veuillez entrer le titre de votre note";
                           }
-                          return null;
+                          return null; // null = pas d'erreur
                         },
                       ),
                     ],
                   ),
                   SizedBox(height: 16),
+                  
+                  // ==============================================================
+                  // CHAMP CONTENU
+                  // ==============================================================
                   Column(
                     // Aligner le titre et le champ de texte au début (à gauche)
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,7 +309,6 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      // Champ Contenu
                       TextFormField(
                         controller: _contentController,
                         decoration: InputDecoration(
@@ -222,8 +324,11 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
                             ),
                           ),
                         ),
-                        maxLines: 10, // Permet plusieurs lignes
-                        // Validation: le contenu ne doit pas être vide
+                        maxLines: 10, // Permet d'écrire sur plusieurs lignes
+                        // ========================================================
+                        // VALIDATION DU CONTENU
+                        // ========================================================
+                        // Le contenu ne doit pas être vide
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return "Veuillez entrer le contenu de votre note";
@@ -233,16 +338,25 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
                       ),
                     ],
                   ),
-                  // Sélecteur de couleur
+                  
+                  // ==============================================================
+                  // SÉLECTEUR DE COULEUR
+                  // ==============================================================
                   Padding(
                     padding: EdgeInsets.all(16),
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal, // Défilement horizontal
                       child: Row(
+                        // ========================================================
+                        // CRÉER UN CERCLE POUR CHAQUE COULEUR
+                        // ========================================================
+                        // map() transforme chaque couleur en widget
                         children: _colors.map((color) {
-                          // Vérifier si c'est la couleur sélectionnée
+                          // Vérifier si c'est la couleur actuellement sélectionnée
                           final isSelected = _selectedColor == color;
+                          
                           return GestureDetector(
+                            // Quand on clique sur le cercle
                             onTap: () {
                               // Changer la couleur sélectionnée
                               setState(() {
@@ -254,9 +368,9 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
                               width: 40,
                               margin: EdgeInsets.only(right: 8),
                               decoration: BoxDecoration(
-                                color: color,
+                                color: color, // La couleur du cercle
                                 shape: BoxShape.circle, // Forme circulaire
-                                // Bordure noire si sélectionné
+                                // Bordure noire si cette couleur est sélectionnée
                                 border: Border.all(
                                   color: isSelected
                                       ? Colors.black45
@@ -271,23 +385,27 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
                                       color: Colors.white,
                                       size: 24,
                                     )
-                                  : null,
+                                  : null, // Pas d'icône si non sélectionné
                             ),
                           );
-                        }).toList(),
+                        }).toList(), // Convertir en liste de widgets
                       ),
                     ),
                   ),
-                  // Bouton "Enregistrer"
+                  
+                  // ==============================================================
+                  // BOUTON "ENREGISTRER"
+                  // ==============================================================
                   InkWell(
+                    // InkWell = rend le container cliquable
                     onTap: () async {
-                      await _saveNote();
+                      await _saveNote(); // Sauvegarder la note
                     },
                     child: Container(
                       margin: EdgeInsets.all(20),
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Color.fromRGBO(118, 189, 255, 100),
+                        color: Color.fromRGBO(118, 189, 255, 100), // Bleu
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(
@@ -309,7 +427,9 @@ class _AddEditNoteScreenState extends State<AddEditNoteScreen> {
         ),
       ),
 
-      // ⭐ AJOUT DE LA BARRE DE NAVIGATION EN BAS ⭐
+      // ======================================================================
+      // BARRE DE NAVIGATION EN BAS
+      // ======================================================================
       // On utilise le widget BottomNavigation qu'on a créé
       // currentIndex: 0 car cette page fait partie de la section "Accueil"
       bottomNavigationBar: BottomNavigation(currentIndex: 0),
