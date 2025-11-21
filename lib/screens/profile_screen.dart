@@ -127,7 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         // ====================================================================
         title: Row(
           children: [
-            Icon(Icons.edit, color: Color.fromRGBO(0, 211, 137, 100)),
+            Icon(Icons.edit, color: Colors.black),
             SizedBox(width: 8),
             Text(
               'Modifier mes informations',
@@ -323,7 +323,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // et l'erreur s'affiche automatiquement
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color.fromRGBO(0, 211, 137, 100),
+              backgroundColor: Color.fromRGBO(
+                          118,
+                          189,
+                          255,
+                          100,
+                        ),
               foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -474,7 +479,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // Bouton Annuler
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler'),
+            child: Text('Annuler', style: TextStyle(color: Colors.grey[600]),),
           ),
           // Bouton Déconnexion
           TextButton(

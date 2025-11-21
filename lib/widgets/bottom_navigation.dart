@@ -213,7 +213,7 @@ class BottomNavigation extends StatelessWidget {
               isActive ? activeIcon : icon,
               size: 22, // Taille de l'icône
               // Couleur : noir si actif, gris si pas actif
-              color: isActive ? Colors.black87 : Colors.grey[600],
+              color: isActive ? Color.fromRGBO(118, 189, 255, 100) : Colors.grey[600],
             ),
 
             SizedBox(height: 4), // Petit espace entre l'icône et le texte
